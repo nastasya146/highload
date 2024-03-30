@@ -1,22 +1,37 @@
 using Grpc.Core;
 using Highload.SocialNetwork.Contracts;
+using Highload.SocialNetwork.Services;
 
-namespace Highload.SocialNetwork.Services;
+namespace Highload.SocialNetwork.GRPC;
 
 public class UserService : UserApi.UserApiBase
 {
     private readonly IUserRepository _userRepository;
+    private readonly IPasswordService _passwordService;
     public UserService(
-        IUserRepository userRepository)
+        IUserRepository userRepository,
+        IPasswordService passwordService)
     {
         _userRepository = userRepository;
+        _passwordService = passwordService;
     }
 
-    public override Task<LoginResponse> Login(
+    public override async Task<LoginResponse> Login(
         LoginRequest request, 
         ServerCallContext context)
     {
-        return Task.FromResult(new LoginResponse());
+        var password = await _userRepository.GetPassword(new Guid(request.UserId), context.CancellationToken);
+        
+        var isPasswordCorrect = _passwordService.VerifyHashedPassword(password, request.Password);
+        if (isPasswordCorrect)
+        {
+            return new LoginResponse
+            {
+                Token = "success"
+            };
+        }
+        //auth error
+        return new LoginResponse();
     }
 
     public override async Task<RegisterUserResponse> RegisterUser(
@@ -25,7 +40,9 @@ public class UserService : UserApi.UserApiBase
     {
         var id = Guid.NewGuid();
         var user = request.MapToUser(id);
-        await _userRepository.AddUser(user, request.Password, context.CancellationToken);
+
+        var hashedPassword = _passwordService.HashPassword(request.Password);
+        await _userRepository.AddUser(user, hashedPassword, context.CancellationToken);
         return new RegisterUserResponse
         {
             UserId = id.ToString()

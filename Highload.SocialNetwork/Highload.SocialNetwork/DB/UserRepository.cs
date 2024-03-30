@@ -81,4 +81,26 @@ where user_id = @user_id;";
             reader.GetFieldValue<string>(4),
             reader.GetFieldValue<string>(5));
     }
+    
+    public async Task<string> GetPassword(Guid userId, CancellationToken cancellationToken)
+    {
+        var dataSourceBuilder = new NpgsqlDataSourceBuilder(settings.Value.ConnectionString);
+        var dataSource = dataSourceBuilder.Build();
+        var connection = await dataSource.OpenConnectionAsync(cancellationToken);
+        
+        const string Query = @"
+select 
+    password
+from public.users
+where user_id = @user_id;";
+
+        await using var command = new NpgsqlCommand(Query, connection);
+        command.Parameters.AddWithValue("user_id", userId);
+
+        await command.PrepareAsync(cancellationToken);
+        
+        await using var reader = await command.ExecuteReaderAsync(CommandBehavior.SingleRow, cancellationToken);
+        await reader.ReadAsync(cancellationToken);
+        return reader.GetFieldValue<string>(0);
+    }
 }
