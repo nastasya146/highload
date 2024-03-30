@@ -1,0 +1,14 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:latest
+    restart: always
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_DB: highloaddb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: pwd
+    volumes:
+      - ./DB/scripts/001_Initial.sql:/docker-entrypoint-initdb.d/001_Initial.sql

@@ -37,10 +37,11 @@ message UserResponse {
 
 message UserInfo {
   string first_name = 1;
-  string second_name = 2;
-  Date birthdate = 3;
-  string biography = 4;
+  string last_name = 2;
+  Date birthDate = 3;
+  string gender = 4;
   string city = 5;
+  string interests = 6;
 }
 
 message Date {
