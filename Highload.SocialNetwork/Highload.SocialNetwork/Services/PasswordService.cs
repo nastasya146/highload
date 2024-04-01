@@ -7,17 +7,17 @@ namespace Highload.SocialNetwork.Services;
 
 public class PasswordService : IPasswordService
 {
-    private readonly RandomNumberGenerator _randomGenerator;
+    private readonly RandomNumberGenerator _rng;
 
     private readonly int _iterCount;
 
     public PasswordService()
     {
-        _randomGenerator = RandomNumberGenerator.Create();
-        _iterCount = 10000;
+        this._rng = RandomNumberGenerator.Create();
+        this._iterCount = 10000;
     }
 
-    private static bool ByteArraysEqual(byte[]? a, byte[]? b)
+    private static bool ByteArraysEqual(byte[] a, byte[] b)
     {
         if (a == null && b == null)
         {
@@ -30,55 +30,52 @@ public class PasswordService : IPasswordService
         var areSame = true;
         for (var i = 0; i < a.Length; i++)
         {
-            areSame &= a[i] == b[i];
+            areSame &= (a[i] == b[i]);
         }
         return areSame;
     }
 
     public virtual string HashPassword(string password)
     {
-        ArgumentNullException.ThrowIfNull(password);
-        return Convert.ToBase64String(HashPasswordV3(password, _randomGenerator));
+        if (password == null)
+        {
+            throw new ArgumentNullException(nameof(password));
+        }
+        return Convert.ToBase64String(HashPasswordV3(password, _rng));
     }
 
-    private byte[] HashPasswordV3(string password, RandomNumberGenerator randomGenerator)
+    private byte[] HashPasswordV3(string password, RandomNumberGenerator rng)
     {
-        return HashPasswordV3(password, randomGenerator,
+        return HashPasswordV3(password, rng,
             prf: KeyDerivationPrf.HMACSHA256,
             iterCount: _iterCount,
             saltSize: 128 / 8,
             numBytesRequested: 256 / 8);
     }
 
-    private static byte[] HashPasswordV3(
-        string password, 
-        RandomNumberGenerator randomGenerator, 
-        KeyDerivationPrf prf, 
-        int iterCount, 
-        int saltSize, 
-        int numBytesRequested)
+    private static byte[] HashPasswordV3(string password, RandomNumberGenerator rng, KeyDerivationPrf prf, int iterCount, int saltSize, int numBytesRequested)
     {
         // Produce a version 3 (see comment above) text hash.
-        var salt = new byte[saltSize];
-        randomGenerator.GetBytes(salt);
-        var subKey = KeyDerivation.Pbkdf2(password, salt, prf, iterCount, numBytesRequested);
+        byte[] salt = new byte[saltSize];
+        rng.GetBytes(salt);
+        byte[] subkey = KeyDerivation.Pbkdf2(password, salt, prf, iterCount, numBytesRequested);
 
-        var outputBytes = new byte[13 + salt.Length + subKey.Length];
+        var outputBytes = new byte[13 + salt.Length + subkey.Length];
         outputBytes[0] = 0x01; // format marker
         WriteNetworkByteOrder(outputBytes, 1, (uint)prf);
         WriteNetworkByteOrder(outputBytes, 5, (uint)iterCount);
         WriteNetworkByteOrder(outputBytes, 9, (uint)saltSize);
         Buffer.BlockCopy(salt, 0, outputBytes, 13, salt.Length);
-        Buffer.BlockCopy(subKey, 0, outputBytes, 13 + saltSize, subKey.Length);
+        Buffer.BlockCopy(subkey, 0, outputBytes, 13 + saltSize, subkey.Length);
         return outputBytes;
     }
 
     private static uint ReadNetworkByteOrder(byte[] buffer, int offset)
     {
-        return ((uint)buffer[offset + 0] << 24)
-            | ((uint)buffer[offset + 1] << 16)
-            | ((uint)buffer[offset + 2] << 8)
-            | buffer[offset + 3];
+        return ((uint)(buffer[offset + 0]) << 24)
+            | ((uint)(buffer[offset + 1]) << 16)
+            | ((uint)(buffer[offset + 2]) << 8)
+            | ((uint)(buffer[offset + 3]));
     }
 
     /// <summary>
@@ -91,49 +88,64 @@ public class PasswordService : IPasswordService
     /// <remarks>Implementations of this method should be time consistent.</remarks>
     public virtual bool VerifyHashedPassword(string hashedPassword, string providedPassword)
     {
-        ArgumentNullException.ThrowIfNull(hashedPassword);
-        ArgumentNullException.ThrowIfNull(providedPassword);
+        if (hashedPassword == null)
+        {
+            throw new ArgumentNullException(nameof(hashedPassword));
+        }
+        if (providedPassword == null)
+        {
+            throw new ArgumentNullException(nameof(providedPassword));
+        }
 
-        var decodedHashedPassword = Convert.FromBase64String(hashedPassword);
+        byte[] decodedHashedPassword = Convert.FromBase64String(hashedPassword);
 
         // read the format marker from the hashed password
         if (decodedHashedPassword.Length == 0)
         {
             return false;
         }
-        
-        return VerifyHashedPasswordV3(decodedHashedPassword, providedPassword);
-        // If this hasher was configured with a higher iteration count, change the entry now.
+        int embeddedIterCount;
+        if (VerifyHashedPasswordV3(decodedHashedPassword, providedPassword, out embeddedIterCount))
+        {
+            // If this hasher was configured with a higher iteration count, change the entry now.
+            return true;
+        }
+        else
+        {
+            return false;
+        }
     }
 
-    private static bool VerifyHashedPasswordV3(byte[] hashedPassword, string password)
+    private static bool VerifyHashedPasswordV3(byte[] hashedPassword, string password, out int iterCount)
     {
+        iterCount = default(int);
 
         try
         {
             // Read header information
-            var prf = (KeyDerivationPrf)ReadNetworkByteOrder(hashedPassword, 1);
-            var saltLength = (int)ReadNetworkByteOrder(hashedPassword, 9);
+            KeyDerivationPrf prf = (KeyDerivationPrf)ReadNetworkByteOrder(hashedPassword, 1);
+            iterCount = (int)ReadNetworkByteOrder(hashedPassword, 5);
+            int saltLength = (int)ReadNetworkByteOrder(hashedPassword, 9);
 
             // Read the salt: must be >= 128 bits
             if (saltLength < 128 / 8)
             {
                 return false;
             }
-            var salt = new byte[saltLength];
+            byte[] salt = new byte[saltLength];
             Buffer.BlockCopy(hashedPassword, 13, salt, 0, salt.Length);
 
             // Read the subkey (the rest of the payload): must be >= 128 bits
-            var subkeyLength = hashedPassword.Length - 13 - salt.Length;
+            int subkeyLength = hashedPassword.Length - 13 - salt.Length;
             if (subkeyLength < 128 / 8)
             {
                 return false;
             }
-            var expectedSubkey = new byte[subkeyLength];
+            byte[] expectedSubkey = new byte[subkeyLength];
             Buffer.BlockCopy(hashedPassword, 13 + salt.Length, expectedSubkey, 0, expectedSubkey.Length);
 
             // Hash the incoming password and verify it
-            var actualSubkey = KeyDerivation.Pbkdf2(password, salt, prf, 0, subkeyLength);
+            byte[] actualSubkey = KeyDerivation.Pbkdf2(password, salt, prf, iterCount, subkeyLength);
             return ByteArraysEqual(actualSubkey, expectedSubkey);
         }
         catch

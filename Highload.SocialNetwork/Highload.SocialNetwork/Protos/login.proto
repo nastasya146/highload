@@ -1,0 +1,17 @@
+syntax = "proto3";
+package user.v1;
+
+option csharp_namespace = "Highload.SocialNetwork";
+
+service Login {
+  rpc Login (LoginRequest) returns (LoginResponse);
+}
+
+message LoginRequest {
+  string user_id = 1;
+  string password = 2;
+}
+
+message LoginResponse {
+  string token = 1;
+}

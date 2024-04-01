@@ -1,39 +1,15 @@
 using Grpc.Core;
 using Highload.SocialNetwork.Contracts;
 using Highload.SocialNetwork.Services;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Highload.SocialNetwork.GRPC;
 
-public class UserService : UserApi.UserApiBase
+public class UserService(
+    IUserRepository userRepository,
+    IPasswordService passwordService)
+    : UserApi.UserApiBase
 {
-    private readonly IUserRepository _userRepository;
-    private readonly IPasswordService _passwordService;
-    public UserService(
-        IUserRepository userRepository,
-        IPasswordService passwordService)
-    {
-        _userRepository = userRepository;
-        _passwordService = passwordService;
-    }
-
-    public override async Task<LoginResponse> Login(
-        LoginRequest request, 
-        ServerCallContext context)
-    {
-        var password = await _userRepository.GetPassword(new Guid(request.UserId), context.CancellationToken);
-        
-        var isPasswordCorrect = _passwordService.VerifyHashedPassword(password, request.Password);
-        if (isPasswordCorrect)
-        {
-            return new LoginResponse
-            {
-                Token = "success"
-            };
-        }
-        //auth error
-        return new LoginResponse();
-    }
-
     public override async Task<RegisterUserResponse> RegisterUser(
         RegisterUserRequest request, 
         ServerCallContext context)
@@ -41,19 +17,27 @@ public class UserService : UserApi.UserApiBase
         var id = Guid.NewGuid();
         var user = request.MapToUser(id);
 
-        var hashedPassword = _passwordService.HashPassword(request.Password);
-        await _userRepository.AddUser(user, hashedPassword, context.CancellationToken);
+        var hashedPassword = passwordService.HashPassword(request.Password);
+        await userRepository.AddUser(user, hashedPassword, context.CancellationToken);
         return new RegisterUserResponse
         {
             UserId = id.ToString()
         };
     }
     
+    [Authorize]
     public override async Task<UserResponse> User(
         UserRequest request, 
         ServerCallContext context)
     {
-        var user = await _userRepository.GetUser(new Guid(request.UserId), context.CancellationToken);
-        return user.MapToResponse();
+        try
+        {
+            var user = await userRepository.GetUser(new Guid(request.UserId), context.CancellationToken);
+            return user.MapToResponse();
+        }
+        catch (Exception ex)
+        {
+            throw new RpcException(new Status(StatusCode.NotFound, "UserNotFound", ex));
+        }
     }
 }
