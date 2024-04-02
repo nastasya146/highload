@@ -1,7 +1,7 @@
 version: "3.8"
 
 services:
-  postgres:
+  highload-postgres:
     image: postgres:latest
     restart: always
     ports:
@@ -12,3 +12,19 @@ services:
       POSTGRES_PASSWORD: pwd
     volumes:
       - ./DB/scripts/001_Initial.sql:/docker-entrypoint-initdb.d/001_Initial.sql
+  highload-api:
+    image: highload-api-image
+    build:
+      context: ./
+      dockerfile: ./Dockerfile
+    container_name: highload-api
+    restart: always
+    environment:
+      ASPNETCORE_ENVIRONMENT: Docker
+      ASPNETCORE_URLS: "http://+:5000"
+    user: "555:555"
+    ports:
+      - 5000:5000
+    entrypoint: dotnet Highload.SocialNetwork.dll
+    depends_on:
+      - highload-postgres
