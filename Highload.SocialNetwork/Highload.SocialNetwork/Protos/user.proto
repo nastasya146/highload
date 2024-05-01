@@ -6,6 +6,7 @@ option csharp_namespace = "Highload.SocialNetwork";
 service UserApi {
   rpc RegisterUser (RegisterUserRequest) returns (RegisterUserResponse);
   rpc User (UserRequest) returns (UserResponse);
+  rpc Search (SearchRequest) returns (SearchResponse);
 }
 
 message RegisterUserRequest {
@@ -23,6 +24,15 @@ message UserRequest {
 
 message UserResponse {
   UserInfo user_info = 1;
+}
+
+message SearchRequest {
+  string first_name = 1;
+  string last_name = 2;
+}
+
+message SearchResponse {
+  repeated UserInfo user_info = 1;
 }
 
 message UserInfo {

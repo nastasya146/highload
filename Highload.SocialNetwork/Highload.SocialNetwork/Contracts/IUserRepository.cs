@@ -8,5 +8,7 @@ public interface IUserRepository
     
     Task<User> GetUser(Guid userId, CancellationToken cancellationToken);
     
+    Task<IEnumerable<User>> Search(string firstName, string lastName, CancellationToken cancellationToken);
+    
     Task<string> GetPassword(Guid userId, CancellationToken cancellationToken);
 }

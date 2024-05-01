@@ -40,4 +40,15 @@ public class UserService(
             throw new RpcException(new Status(StatusCode.NotFound, "UserNotFound", ex));
         }
     }
+    
+    [Authorize]
+    public override async Task<SearchResponse> Search(SearchRequest request,
+        ServerCallContext context)
+    {
+        var users = await userRepository.Search(request.FirstName, request.LastName, context.CancellationToken);
+        return new SearchResponse
+        {
+            UserInfo = { users.Select(x => x.MapToUserInfo()).ToArray() }
+        };
+    }
 }
