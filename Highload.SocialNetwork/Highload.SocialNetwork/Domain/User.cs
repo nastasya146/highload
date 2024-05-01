@@ -5,6 +5,6 @@ public sealed record User(
     string FirstName,
     string LastName,
     DateOnly BirthDate,
-    string Gender,
+    string? Gender,
     string City,
-    string Interests);
+    string? Interests);
