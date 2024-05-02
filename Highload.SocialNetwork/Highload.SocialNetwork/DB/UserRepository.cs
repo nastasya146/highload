@@ -140,6 +140,46 @@ order by user_id;";
         await dataSource.DisposeAsync();
         return results;
     }
+
+    public async Task<IEnumerable<User>> Search(string firstName, string lastName, CancellationToken cancellationToken)
+    {
+        var dataSourceBuilder = new NpgsqlDataSourceBuilder(settings.Value.ConnectionString);
+        var dataSource = dataSourceBuilder.Build();
+        var connection = await dataSource.OpenConnectionAsync(cancellationToken);
+        
+        const string Query = @"
+select 
+    user_id,
+    first_name,
+    last_name,
+    birth_date,
+    gender,
+    city,
+    interests
+from public.users
+where first_name LIKE @first_name and last_name LIKE @last_name;";
+
+        await using var command = new NpgsqlCommand(Query, connection);
+        command.Parameters.AddWithValue("first_name", firstName + "%");
+        command.Parameters.AddWithValue("last_name", lastName + "%");
+
+        await command.PrepareAsync(cancellationToken);
+        
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+
+        var results = new List<User>();
+        while (await reader.ReadAsync(cancellationToken))
+            results.Add(
+                new User(
+                    reader.GetFieldValue<Guid>(0),
+                    reader.GetFieldValue<string>(1),
+                    reader.GetFieldValue<string>(2),
+                    reader.GetFieldValue<DateOnly>(3),
+                    reader.GetFieldValue<string>(4),
+                    reader.GetFieldValue<string>(4), 
+                    reader.GetFieldValue<string>(5)));
+        return results;
+    }
     
     public async Task<string> GetPassword(Guid userId, CancellationToken cancellationToken)
     {
