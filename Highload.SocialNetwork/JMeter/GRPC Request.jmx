@@ -10,9 +10,9 @@
     </TestPlan>
     <hashTree>
       <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="Thread Group">
-        <intProp name="ThreadGroup.num_threads">1000</intProp>
+        <intProp name="ThreadGroup.num_threads">100</intProp>
         <intProp name="ThreadGroup.ramp_time">30</intProp>
-        <longProp name="ThreadGroup.duration">35</longProp>
+        <longProp name="ThreadGroup.duration">100</longProp>
         <boolProp name="ThreadGroup.same_user_on_next_iteration">true</boolProp>
         <boolProp name="ThreadGroup.scheduler">true</boolProp>
         <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
@@ -22,9 +22,9 @@
         </elementProp>
       </ThreadGroup>
       <hashTree>
-        <OnceOnlyController guiclass="OnceOnlyControllerGui" testclass="OnceOnlyController" testname="Once Only Controller" enabled="true"/>
+        <OnceOnlyController guiclass="OnceOnlyControllerGui" testclass="OnceOnlyController" testname="Once Only Controller"/>
         <hashTree>
-          <vn.zalopay.benchmark.GRPCSampler guiclass="vn.zalopay.benchmark.GRPCSamplerGui" testclass="vn.zalopay.benchmark.GRPCSampler" testname="RegisterUser" enabled="true">
+          <vn.zalopay.benchmark.GRPCSampler guiclass="vn.zalopay.benchmark.GRPCSamplerGui" testclass="vn.zalopay.benchmark.GRPCSampler" testname="RegisterUser">
             <stringProp name="GRPCSampler.protoFolder">/Users/andemyanenko/Documents/Learning/Git/highload-dotnet/Highload.SocialNetwork/Highload.SocialNetwork/Protos</stringProp>
             <stringProp name="GRPCSampler.libFolder"></stringProp>
             <stringProp name="GRPCSampler.metadata"></stringProp>
@@ -61,14 +61,40 @@
             </JSONPostProcessor>
             <hashTree/>
           </hashTree>
+          <vn.zalopay.benchmark.GRPCSampler guiclass="vn.zalopay.benchmark.GRPCSamplerGui" testclass="vn.zalopay.benchmark.GRPCSampler" testname="Login">
+            <stringProp name="GRPCSampler.protoFolder">/Users/andemyanenko/Documents/Learning/Git/highload-dotnet/Highload.SocialNetwork/Highload.SocialNetwork/Protos</stringProp>
+            <stringProp name="GRPCSampler.libFolder"></stringProp>
+            <stringProp name="GRPCSampler.metadata"></stringProp>
+            <stringProp name="GRPCSampler.host">localhost</stringProp>
+            <stringProp name="GRPCSampler.port">5000</stringProp>
+            <stringProp name="GRPCSampler.fullMethod">user.v1.Login/Login</stringProp>
+            <stringProp name="GRPCSampler.deadline">10000</stringProp>
+            <boolProp name="GRPCSampler.tls">false</boolProp>
+            <boolProp name="GRPCSampler.tlsDisableVerification">false</boolProp>
+            <stringProp name="GRPCSampler.channelAwaitTermination">10000</stringProp>
+            <stringProp name="GRPCSampler.maxInboundMessageSize">4194304</stringProp>
+            <stringProp name="GRPCSampler.maxInboundMetadataSize">8192</stringProp>
+            <stringProp name="GRPCSampler.requestJson">{
+    &quot;password&quot;: &quot;qwerty123&quot;,
+    &quot;user_id&quot;: &quot;${userId}&quot;
+}</stringProp>
+          </vn.zalopay.benchmark.GRPCSampler>
+          <hashTree>
+            <JSONPostProcessor guiclass="JSONPostProcessorGui" testclass="JSONPostProcessor" testname="Token Extractor">
+              <stringProp name="JSONPostProcessor.referenceNames">token</stringProp>
+              <stringProp name="JSONPostProcessor.jsonPathExprs">token</stringProp>
+              <stringProp name="JSONPostProcessor.match_numbers"></stringProp>
+            </JSONPostProcessor>
+            <hashTree/>
+          </hashTree>
         </hashTree>
-        <vn.zalopay.benchmark.GRPCSampler guiclass="vn.zalopay.benchmark.GRPCSamplerGui" testclass="vn.zalopay.benchmark.GRPCSampler" testname="Login" enabled="true">
+        <vn.zalopay.benchmark.GRPCSampler guiclass="vn.zalopay.benchmark.GRPCSamplerGui" testclass="vn.zalopay.benchmark.GRPCSampler" testname="GetUser">
           <stringProp name="GRPCSampler.protoFolder">/Users/andemyanenko/Documents/Learning/Git/highload-dotnet/Highload.SocialNetwork/Highload.SocialNetwork/Protos</stringProp>
           <stringProp name="GRPCSampler.libFolder"></stringProp>
-          <stringProp name="GRPCSampler.metadata"></stringProp>
+          <stringProp name="GRPCSampler.metadata">Authorization:Bearer ${token}</stringProp>
           <stringProp name="GRPCSampler.host">localhost</stringProp>
           <stringProp name="GRPCSampler.port">5000</stringProp>
-          <stringProp name="GRPCSampler.fullMethod">user.v1.Login/Login</stringProp>
+          <stringProp name="GRPCSampler.fullMethod">user.v1.UserApi/User</stringProp>
           <stringProp name="GRPCSampler.deadline">10000</stringProp>
           <boolProp name="GRPCSampler.tls">false</boolProp>
           <boolProp name="GRPCSampler.tlsDisableVerification">false</boolProp>
@@ -76,19 +102,11 @@
           <stringProp name="GRPCSampler.maxInboundMessageSize">4194304</stringProp>
           <stringProp name="GRPCSampler.maxInboundMetadataSize">8192</stringProp>
           <stringProp name="GRPCSampler.requestJson">{
-    &quot;password&quot;: &quot;qwerty123&quot;,
-    &quot;user_id&quot;: &quot;${userId}&quot;
+	&quot;user_id&quot;:&quot;${userId}&quot;
 }</stringProp>
         </vn.zalopay.benchmark.GRPCSampler>
-        <hashTree>
-          <JSONPostProcessor guiclass="JSONPostProcessorGui" testclass="JSONPostProcessor" testname="Token Extractor" enabled="true">
-            <stringProp name="JSONPostProcessor.referenceNames">token</stringProp>
-            <stringProp name="JSONPostProcessor.jsonPathExprs">token</stringProp>
-            <stringProp name="JSONPostProcessor.match_numbers"></stringProp>
-          </JSONPostProcessor>
-          <hashTree/>
-        </hashTree>
-        <vn.zalopay.benchmark.GRPCSampler guiclass="vn.zalopay.benchmark.GRPCSamplerGui" testclass="vn.zalopay.benchmark.GRPCSampler" testname="Search" enabled="true">
+        <hashTree/>
+        <vn.zalopay.benchmark.GRPCSampler guiclass="vn.zalopay.benchmark.GRPCSamplerGui" testclass="vn.zalopay.benchmark.GRPCSampler" testname="Search">
           <stringProp name="GRPCSampler.protoFolder">/Users/andemyanenko/Documents/Learning/Git/highload-dotnet/Highload.SocialNetwork/Highload.SocialNetwork/Protos</stringProp>
           <stringProp name="GRPCSampler.libFolder"></stringProp>
           <stringProp name="GRPCSampler.metadata">Authorization:Bearer ${token}</stringProp>
