@@ -10,3 +10,7 @@ create table if not exists public.users (
 );
 
 copy users (last_name, first_name, birth_date, city, password) FROM '/tmp/people.v2.2.csv' CSV HEADER;
+
+create index idx_users_first_last_name
+    on public.users
+        using btree (first_name text_pattern_ops, last_name text_pattern_ops);
