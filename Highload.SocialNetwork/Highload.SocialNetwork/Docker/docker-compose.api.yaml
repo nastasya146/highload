@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  highload-api:
+    image: highload-api-image
+    build:
+      context: ../
+      dockerfile: ./Dockerfile
+    container_name: highload-api
+    restart: always
+    environment:
+      ASPNETCORE_ENVIRONMENT: Docker
+      ASPNETCORE_URLS: "http://+:5000"
+    user: "555:555"
+    ports:
+      - 5000:5000
+    entrypoint: dotnet Highload.SocialNetwork.dll
+    depends_on:
+      - pgmaster
+    networks:
+      - general

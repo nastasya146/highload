@@ -2,6 +2,7 @@ using Grpc.Core;
 using Highload.SocialNetwork.Contracts;
 using Highload.SocialNetwork.Services;
 using Microsoft.AspNetCore.Authorization;
+using static Highload.SocialNetwork.DB.ReplicaSettings;
 
 namespace Highload.SocialNetwork.GRPC;
 
@@ -11,14 +12,26 @@ public class UserService(
     : UserApi.UserApiBase
 {
     public override async Task<RegisterUserResponse> RegisterUser(
-        RegisterUserRequest request, 
+        RegisterUserRequest request,
         ServerCallContext context)
     {
         var id = Guid.NewGuid();
         var user = request.MapToUser(id);
 
         var hashedPassword = passwordService.HashPassword(request.Password);
-        await userRepository.AddUser(user, hashedPassword, context.CancellationToken);
+        try
+        {
+            await userRepository.AddUser(user, hashedPassword, IsConnectionStringMaster, context.CancellationToken);
+        }
+        catch (Npgsql.PostgresException ex)
+        {
+            if (ex.SqlState == "25006")
+            {
+                await userRepository.AddUser(user, hashedPassword, !IsConnectionStringMaster, CancellationToken.None);
+                IsConnectionStringMaster = !IsConnectionStringMaster;
+            }
+        }
+
         return new RegisterUserResponse
         {
             UserId = id.ToString()

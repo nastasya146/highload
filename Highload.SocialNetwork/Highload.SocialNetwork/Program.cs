@@ -1,4 +1,5 @@
 using System.Text;
+using Highload.SocialNetwork;
 using Highload.SocialNetwork.Contracts;
 using Highload.SocialNetwork.DB;
 using Highload.SocialNetwork.GRPC;
@@ -6,7 +7,12 @@ using Highload.SocialNetwork.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 
-var config = new ConfigurationBuilder().AddJsonFile("appsettings.json").AddEnvironmentVariables().Build();
+IConfigurationRoot config = new ConfigurationBuilder().AddJsonFile("appsettings.json").AddEnvironmentVariables().Build();
+if (EnvChecker.IsRunningInContainer())
+{
+    config = new ConfigurationBuilder().AddJsonFile("appsettings.Docker.json").AddEnvironmentVariables().Build();
+}
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -50,3 +56,4 @@ app.MapGrpcService<LoginService>();
 app.MapGrpcService<UserService>();
 
 app.Run();
+

@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  pgmaster:
+    image: postgres:latest
+    container_name: pgmaster
+    environment:
+      POSTGRES_DB: highloaddb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: pwd
+    volumes:
+      - ./volumes/master-data:/var/lib/postgresql/data
+      - ../DB/scripts/001_Initial.sql:/docker-entrypoint-initdb.d/001_Initial.sql
+      - ../DB/scripts/create_replicator_role.sql:/docker-entrypoint-initdb.d/create_replicator_role.sql
+      - ../Resources/people.v2.2.csv:/tmp/people.v2.2.csv
+      - ./10_update_conf.sh:/docker-entrypoint-initdb.d/10_update_conf.sh
+    ports:
+      - "5432:5432"
+    networks:
+      - general
+
+networks:
+  general:
+    driver: bridge

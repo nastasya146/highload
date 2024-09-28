@@ -8,9 +8,20 @@ namespace Highload.SocialNetwork.DB;
 
 public class UserRepository(IOptions<DatabaseSettings> settings) : IUserRepository
 {
-    public async Task AddUser(User user, string password, CancellationToken cancellationToken)
+    public async Task AddUser(
+        User user, 
+        string password, 
+        bool useMaster,
+        CancellationToken cancellationToken)
     {
-        var dataSourceBuilder = new NpgsqlDataSourceBuilder(settings.Value.ConnectionString);
+        var connectionString = settings.Value.ConnectionString;
+        if (!useMaster)
+        {
+            connectionString = settings.Value.ConnectionStringSlave;
+        }
+        
+        var dataSourceBuilder = new NpgsqlDataSourceBuilder(connectionString);
+        
         var dataSource = dataSourceBuilder.Build();
         await using var connection = await dataSource.OpenConnectionAsync(cancellationToken);
         
@@ -50,7 +61,7 @@ insert into public.users (user_id,
     
     public async Task<User> GetUser(Guid userId, CancellationToken cancellationToken)
     {
-        var dataSourceBuilder = new NpgsqlDataSourceBuilder(settings.Value.ConnectionString);
+        var dataSourceBuilder = new NpgsqlDataSourceBuilder(settings.Value.ConnectionStringSlave);
         var dataSource = dataSourceBuilder.Build();
         await using var connection = await dataSource.OpenConnectionAsync(cancellationToken);
         
@@ -88,7 +99,7 @@ where user_id = @user_id;";
 
     public async Task<List<User>> Search(string firstName, string lastName, CancellationToken cancellationToken)
     {
-        var dataSourceBuilder = new NpgsqlDataSourceBuilder(settings.Value.ConnectionString);
+        var dataSourceBuilder = new NpgsqlDataSourceBuilder(settings.Value.ConnectionStringSlave);
         var dataSource = dataSourceBuilder.Build();
         await using var connection = await dataSource.OpenConnectionAsync(cancellationToken);
         

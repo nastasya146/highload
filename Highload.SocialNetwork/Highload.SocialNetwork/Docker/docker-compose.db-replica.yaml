@@ -1,0 +1,33 @@
+version: '3.7'
+services:
+  pgreplica1:
+    image: postgres:latest
+    container_name: pgreplica1
+    environment:
+      POSTGRES_DB: highloaddb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: pwd
+    volumes:
+      - ./volumes/replica1-data:/var/lib/postgresql/data
+    ports:
+      - "15432:5432"
+    depends_on:
+      - pgmaster
+    networks:
+      - general
+  
+  pgreplica2:
+    image: postgres:latest
+    container_name: pgreplica2
+    environment:
+      POSTGRES_DB: highloaddb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: pwd
+    volumes:
+      - ./volumes/replica2-data:/var/lib/postgresql/data
+    ports:
+      - "25432:5432"
+    depends_on:
+      - pgmaster
+    networks:
+      - general
